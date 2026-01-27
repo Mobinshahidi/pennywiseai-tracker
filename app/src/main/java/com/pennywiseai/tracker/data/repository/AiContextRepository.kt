@@ -220,7 +220,7 @@ class AiContextRepository @Inject constructor(
 
     private suspend fun getAccountBalances(): List<AccountBalanceSummary> {
         // Get the latest balances for each account
-        return accountBalanceDao.getLatestBalancesPerAccount()
+        return accountBalanceDao.getAllLatestBalances().first()
             .map { balance ->
                 AccountBalanceSummary(
                     bankName = balance.bankName,
