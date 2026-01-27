@@ -73,7 +73,12 @@ object CurrencyFormatter {
             } catch (e: Exception) {
                 // If currency not supported, use symbol mapping
                 val symbol = CURRENCY_SYMBOLS[currencyCode] ?: currencyCode
-                return "$symbol${formatAmount(amount, currencyCode)}"
+                // Add space between IRR symbol and amount for better readability
+                if (currencyCode == "IRR") {
+                    return "$symbol ${formatAmount(amount, currencyCode)}"
+                } else {
+                    return "$symbol${formatAmount(amount, currencyCode)}"
+                }
             }
 
             // Show decimals only if they exist
@@ -83,7 +88,12 @@ object CurrencyFormatter {
         } catch (e: Exception) {
             // Fallback to symbol + amount
             val symbol = CURRENCY_SYMBOLS[currencyCode] ?: currencyCode
-            "$symbol${formatAmount(amount, currencyCode)}"
+            // Add space between IRR symbol and amount for better readability
+            if (currencyCode == "IRR") {
+                "$symbol ${formatAmount(amount, currencyCode)}"
+            } else {
+                "$symbol${formatAmount(amount, currencyCode)}"
+            }
         }
     }
 

@@ -35,11 +35,30 @@ class MelliBankParser : BankParser() {
     override fun extractAmount(message: String): BigDecimal? {
         // Parse amounts using the regex pattern from the original Python script
         val amountPattern = Regex("""(?:مبلغ\s*)?(\d{1,3}(?:,\d{3})*|\d+)(?:\s*(?:ریال|تومان))?\s*(?:برداشت|واریز|انتقال|خرید|[-+])""")
-        
+
         amountPattern.find(message)?.let { match ->
             val rawAmount = Regex("""[^\d,]""").replace(match.groupValues[1], "")
             val cleanAmount = rawAmount.replace(",", "")
-            
+
+            return try {
+                val amountValue = cleanAmount.toBigDecimal()
+                // Only accept amounts >= 1000 based on the Python script logic
+                if (amountValue >= BigDecimal.valueOf(1000)) {
+                    amountValue
+                } else {
+                    null
+                }
+            } catch (e: NumberFormatException) {
+                null
+            }
+        }
+
+        // Also check for amounts with + or - signs (like in your examples)
+        val plusMinusAmountPattern = Regex("""[+-](\d{1,3}(?:,\d{3})*|\d+)""")
+        plusMinusAmountPattern.find(message)?.let { match ->
+            val rawAmount = Regex("""[^\d,]""").replace(match.groupValues[1], "")
+            val cleanAmount = rawAmount.replace(",", "")
+
             return try {
                 val amountValue = cleanAmount.toBigDecimal()
                 // Only accept amounts >= 1000 based on the Python script logic
@@ -66,20 +85,32 @@ class MelliBankParser : BankParser() {
 
         // Check for Persian keywords from the original Python script
         return when {
-            // Expense keywords in Persian
-            lowerMessage.contains("برداشت") || 
-            lowerMessage.contains("پرداخت") || 
-            lowerMessage.contains("خرید") || 
-            lowerMessage.contains("انتقال") || 
-            lowerMessage.contains("مصرف") -> TransactionType.EXPENSE
+            // Income keywords in Persian - check for + sign first
+            lowerMessage.contains("واریز") ||
+            lowerMessage.contains("+") ||
+            lowerMessage.contains("credited") ||
+            // Check for + followed by number (common in Iranian bank messages)
+            containsPlusSignAmount(message) -> TransactionType.INCOME
 
-            // Income keywords in Persian
-            lowerMessage.contains("واریز") || 
-            lowerMessage.contains("+") || 
-            lowerMessage.contains("credited") -> TransactionType.INCOME
+            // Expense keywords in Persian
+            lowerMessage.contains("برداشت") ||
+            lowerMessage.contains("پرداخت") ||
+            lowerMessage.contains("خرید") ||
+            lowerMessage.contains("انتقال") ||
+            lowerMessage.contains("مصرف") -> TransactionType.EXPENSE
 
             else -> null
         }
+    }
+
+    /**
+     * Checks if the message contains a plus sign followed by an amount
+     * This is common in Iranian bank messages to indicate income
+     */
+    private fun containsPlusSignAmount(message: String): Boolean {
+        // Look for + followed by digits or comma-separated digits
+        val plusAmountPattern = Regex("""\+(\d{1,3}(?:,\d{3})*|\d+)""")
+        return plusAmountPattern.containsMatchIn(message)
     }
 
     override fun extractMerchant(message: String, sender: String): String? {
@@ -159,14 +190,27 @@ class MelliBankParser : BankParser() {
             return false
         }
 
-        // Must contain transaction keywords from the original Python script
+        // Check for Iranian bank transaction patterns
+        val iranianPatterns = listOf(
+            "خريداينترنتي",  // Internet purchase
+            "انتقال",         // Transfer
+            "برداشت",        // Withdrawal
+            "انتقالي",       // Transfer (another form)
+            "واریز"          // Deposit
+        )
+
+        // Check for transaction keywords from the original Python script
         val transactionKeywords = listOf(
             "مبلغ", "ریال", "تومان", "IRR", "TOMAN",
             "برداشت", "واریز", "پرداخت", "خرید", "انتقال",
             "debit", "credit", "spent", "received", "transferred", "paid"
         )
 
-        return transactionKeywords.any { lowerMessage.contains(it) }
+        // Check if message contains any of the Iranian patterns or transaction keywords
+        return (iranianPatterns.any { lowerMessage.contains(it) } ||
+                transactionKeywords.any { lowerMessage.contains(it) } ||
+                // Also check for + or - signs which indicate transactions
+                message.contains('+') || message.contains('-'))
     }
 
     override fun cleanMerchantName(merchant: String): String {

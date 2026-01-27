@@ -38,6 +38,7 @@ data class CurrencyGroupedTotals(
         val totalTransfer = totalsByCurrency.values.sumOf { it.transfer }
         val totalInvestment = totalsByCurrency.values.sumOf { it.investment }
         val totalTransactionCount = totalsByCurrency.values.sumOf { it.transactionCount }
+        val totalNetWorth = totalsByCurrency.values.sumOf { it.netWorth }
 
         return CurrencyTotals(
             currency = "ALL",
@@ -46,7 +47,8 @@ data class CurrencyGroupedTotals(
             credit = totalCredit,
             transfer = totalTransfer,
             investment = totalInvestment,
-            transactionCount = totalTransactionCount
+            transactionCount = totalTransactionCount,
+            netWorth = totalNetWorth
         )
     }
 
@@ -65,7 +67,8 @@ data class CurrencyTotals(
     val credit: BigDecimal = BigDecimal.ZERO,
     val transfer: BigDecimal = BigDecimal.ZERO,
     val investment: BigDecimal = BigDecimal.ZERO,
-    val transactionCount: Int = 0
+    val transactionCount: Int = 0,
+    val netWorth: BigDecimal = BigDecimal.ZERO  // Represents actual account balances/net worth
 ) {
     val netBalance: BigDecimal
         get() = income - expenses - credit - transfer - investment
