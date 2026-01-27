@@ -14,6 +14,7 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.pennywiseai.tracker.data.database.dao.AccountBalanceDao
 
 /**
  * Repository for gathering AI chat context from financial data
@@ -21,7 +22,8 @@ import javax.inject.Singleton
 @Singleton
 class AiContextRepository @Inject constructor(
     private val transactionDao: TransactionDao,
-    private val subscriptionDao: SubscriptionDao
+    private val subscriptionDao: SubscriptionDao,
+    private val accountBalanceDao: AccountBalanceDao
 ) {
     
     /**
@@ -43,7 +45,8 @@ class AiContextRepository @Inject constructor(
             recentTransactions = recentTransactionsDeferred.await(),
             activeSubscriptions = activeSubscriptionsDeferred.await(),
             topCategories = topCategoriesDeferred.await(),
-            quickStats = quickStatsDeferred.await()
+            quickStats = quickStatsDeferred.await(),
+            accountBalances = getAccountBalances()
         )
     }
     

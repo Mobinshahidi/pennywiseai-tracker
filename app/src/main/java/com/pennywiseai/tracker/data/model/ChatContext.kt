@@ -14,7 +14,16 @@ data class ChatContext(
     val recentTransactions: List<TransactionSummary>,
     val activeSubscriptions: List<SubscriptionSummary>,
     val topCategories: List<CategorySpending>,
-    val quickStats: QuickStats
+    val quickStats: QuickStats,
+    val accountBalances: List<AccountBalanceSummary> = emptyList()
+)
+
+data class AccountBalanceSummary(
+    val bankName: String,
+    val accountLast4: String?,
+    val balance: BigDecimal,
+    val currency: String,
+    val isCreditCard: Boolean = false
 )
 
 data class MonthSummary(
