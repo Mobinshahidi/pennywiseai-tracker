@@ -531,9 +531,7 @@ class SettingsViewModel @Inject constructor(
 
     fun updateBaseCurrency(currency: String) {
         viewModelScope.launch {
-            userPreferencesRepository.context.dataStore.edit { preferences ->
-                preferences[com.pennywiseai.tracker.data.preferences.UserPreferencesRepository.PreferencesKeys.BASE_CURRENCY] = currency
-            }
+            userPreferencesRepository.updateBaseCurrency(currency)
         }
     }
 
