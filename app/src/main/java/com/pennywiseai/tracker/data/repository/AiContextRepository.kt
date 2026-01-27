@@ -217,4 +217,18 @@ class AiContextRepository @Inject constructor(
             mostFrequentMerchantCount = mostFrequent?.value ?: 0
         )
     }
+
+    private suspend fun getAccountBalances(): List<AccountBalanceSummary> {
+        // Get the latest balances for each account
+        return accountBalanceDao.getLatestBalancesPerAccount()
+            .map { balance ->
+                AccountBalanceSummary(
+                    bankName = balance.bankName,
+                    accountLast4 = balance.accountLast4,
+                    balance = balance.balance ?: BigDecimal.ZERO,
+                    currency = balance.currency,
+                    isCreditCard = balance.isCreditCard ?: false
+                )
+            }
+    }
 }

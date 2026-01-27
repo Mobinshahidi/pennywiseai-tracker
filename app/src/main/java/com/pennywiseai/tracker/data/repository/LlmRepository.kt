@@ -224,38 +224,55 @@ class LlmRepository @Inject constructor(
         val topCategories = context.topCategories
         val activeSubs = context.activeSubscriptions
         val stats = context.quickStats
-        
+        val accountBalances = context.accountBalances
+
         val totalSubAmount = activeSubs.sumOf { it.amount.toDouble() }.toBigDecimal()
         val upcomingPayments = activeSubs.filter { it.nextPaymentDays <= 7 }
-        
+
+        // Calculate total net worth from account balances
+        val totalCashBalance = accountBalances.filter { !it.isCreditCard }.sumOf { it.balance }
+        val totalCreditCardDebt = accountBalances.filter { it.isCreditCard }.sumOf { it.balance }
+        val netWorth = totalCashBalance - totalCreditCardDebt
+
         return """
         You are PennyWise AI, a friendly financial assistant helping users track expenses and manage money.
-        
+
         Current Financial Overview (${context.currentDate}):
         - This month: ${CurrencyUtils.formatCurrency(monthSummary.totalExpense)} spent, ${CurrencyUtils.formatCurrency(monthSummary.totalIncome)} income
         - ${monthSummary.transactionCount} transactions (Day ${monthSummary.currentDay}/${monthSummary.daysInMonth})
         - Daily average: ${CurrencyUtils.formatCurrency(stats.avgDailySpending)}
-        
+        - Current net worth (maneh): ${CurrencyUtils.formatCurrency(netWorth)} (${CurrencyUtils.formatCurrency(totalCashBalance)} in accounts - ${CurrencyUtils.formatCurrency(totalCreditCardDebt)} in credit)
+
+        Account Balances:
+        ${if (accountBalances.isNotEmpty()) {
+            accountBalances.joinToString("\n") { balance ->
+                val accountType = if (balance.isCreditCard) "Credit Card" else "Account"
+                val balanceSign = if (balance.isCreditCard) "-" else ""
+                "- ${balance.bankName} $accountType ${balance.accountLast4?.let { "**$it" } ?: ""}: ${balanceSign}${CurrencyUtils.formatCurrency(balance.balance)} ${balance.currency}"
+            }
+        } else "No account balances recorded"}
+
         Top spending categories:
         ${topCategories.joinToString("\n") { "- ${it.category}: ${CurrencyUtils.formatCurrency(it.amount)} (${it.percentage.toInt()}%)" }}
-        
+
         Active subscriptions: ${activeSubs.size} services (${CurrencyUtils.formatCurrency(totalSubAmount)}/month)
         ${if (upcomingPayments.isNotEmpty()) "⚠️ ${upcomingPayments.size} payments due in next 7 days" else ""}
-        
+
         Recent Transactions (Last 14 days):
         ${context.recentTransactions.take(10).joinToString("\n") { transaction ->
             val dateStr = transaction.dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, h:mm a"))
             val typeStr = if (transaction.transactionType == TransactionType.INCOME) "+" else "-"
             "- $dateStr: ${transaction.merchantName} ${typeStr}${CurrencyUtils.formatCurrency(transaction.amount)} (${transaction.category})"
         }}
-        
+
         ${if (stats.mostFrequentMerchant != null) "Most visited: ${stats.mostFrequentMerchant} (${stats.mostFrequentMerchantCount} times)" else ""}
-        
+
         Guidelines:
         - Be helpful and non-judgmental about spending
         - Provide actionable insights when asked
-        - Use ₹ symbol for amounts
+        - Use ₹ symbol for amounts (but note that user may have IRR, USD, etc.)
         - Reference actual data when answering
+        - When asked about current money/net worth (maneh), refer to the account balances
         - Keep responses concise and relevant
         - Use plain text formatting only - no markdown, no special characters
         - Do not use asterisks, underscores, backticks or other markdown syntax
