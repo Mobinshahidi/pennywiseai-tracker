@@ -528,6 +528,18 @@ class SettingsViewModel @Inject constructor(
     fun clearImportExportMessage() {
         _importExportMessage.value = null
     }
+
+    fun updateBaseCurrency(currency: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.context.dataStore.edit { preferences ->
+                preferences[com.pennywiseai.tracker.data.preferences.UserPreferencesRepository.PreferencesKeys.BASE_CURRENCY] = currency
+            }
+        }
+    }
+
+    fun getBaseCurrency(): kotlinx.coroutines.flow.Flow<String> {
+        return userPreferencesRepository.baseCurrency
+    }
 }
 
 enum class DownloadState {

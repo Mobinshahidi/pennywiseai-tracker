@@ -25,6 +25,34 @@ data class CurrencyGroupedTotals(
             else -> "INR" // Default fallback
         }
     }
+
+    fun getAllTotalsCombined(): CurrencyTotals {
+        if (totalsByCurrency.isEmpty()) {
+            return CurrencyTotals(currency = "ALL")
+        }
+
+        // Combine all currency totals
+        val totalIncome = totalsByCurrency.values.sumOf { it.income }
+        val totalExpenses = totalsByCurrency.values.sumOf { it.expenses }
+        val totalCredit = totalsByCurrency.values.sumOf { it.credit }
+        val totalTransfer = totalsByCurrency.values.sumOf { it.transfer }
+        val totalInvestment = totalsByCurrency.values.sumOf { it.investment }
+        val totalTransactionCount = totalsByCurrency.values.sumOf { it.transactionCount }
+
+        return CurrencyTotals(
+            currency = "ALL",
+            income = totalIncome,
+            expenses = totalExpenses,
+            credit = totalCredit,
+            transfer = totalTransfer,
+            investment = totalInvestment,
+            transactionCount = totalTransactionCount
+        )
+    }
+
+    fun hasMultipleCurrencies(): Boolean {
+        return totalsByCurrency.size > 1
+    }
 }
 
 /**

@@ -61,6 +61,7 @@ fun SettingsScreen(
     val smsScanAllTime by settingsViewModel.smsScanAllTime.collectAsStateWithLifecycle(initialValue = false)
     val importExportMessage by settingsViewModel.importExportMessage.collectAsStateWithLifecycle()
     val exportedBackupFile by settingsViewModel.exportedBackupFile.collectAsStateWithLifecycle()
+    val selectedCurrency by settingsViewModel.getBaseCurrency().collectAsStateWithLifecycle(initialValue = "INR")
     var showSmsScanDialog by remember { mutableStateOf(false) }
     var showExportOptionsDialog by remember { mutableStateOf(false) }
     var showTimeoutDialog by remember { mutableStateOf(false) }
@@ -496,6 +497,54 @@ fun SettingsScreen(
             }
         }
         
+        // Default Currency
+        PennyWiseCard(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(Dimensions.Padding.content),
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Default Currency",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Set the default currency for the app",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Currency selection chips
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                ) {
+                    val currencies = listOf("INR", "IRR", "USD", "EUR", "GBP", "AED", "SAR", "KWD", "QAR", "OMR")
+
+                    items(currencies) { currency ->
+                        FilterChip(
+                            selected = selectedCurrency == currency,
+                            onClick = { settingsViewModel.updateBaseCurrency(currency) },
+                            label = { Text(currency) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
         // SMS Scan Period
         PennyWiseCard(
             modifier = Modifier

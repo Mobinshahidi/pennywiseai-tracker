@@ -32,14 +32,16 @@ object CurrencyFormatter {
         "THB" to "฿",
         "MYR" to "RM",
         "KWD" to "KD",
-        "KRW" to "₩"
+        "KRW" to "₩",
+        "IRR" to "﷼"
     )
 
     /**
      * Locale mapping for different currencies
      */
     private val CURRENCY_LOCALES = mapOf(
-        "INR" to INDIAN_LOCALE,
+        "INR" to INDIAN_LOCALE,  // Keep Indian locale for INR (lakh/crore format)
+        "IRR" to Locale.US,       // Use US locale for Iranian Rial to avoid lakh/crore format
         "USD" to Locale.US,
         "EUR" to Locale.GERMANY,
         "GBP" to Locale.UK,
@@ -71,7 +73,7 @@ object CurrencyFormatter {
             } catch (e: Exception) {
                 // If currency not supported, use symbol mapping
                 val symbol = CURRENCY_SYMBOLS[currencyCode] ?: currencyCode
-                return "$symbol${formatAmount(amount)}"
+                return "$symbol${formatAmount(amount, currencyCode)}"
             }
 
             // Show decimals only if they exist
@@ -81,7 +83,7 @@ object CurrencyFormatter {
         } catch (e: Exception) {
             // Fallback to symbol + amount
             val symbol = CURRENCY_SYMBOLS[currencyCode] ?: currencyCode
-            "$symbol${formatAmount(amount)}"
+            "$symbol${formatAmount(amount, currencyCode)}"
         }
     }
 
@@ -109,8 +111,9 @@ object CurrencyFormatter {
     /**
      * Formats just the numeric amount without currency symbol
      */
-    private fun formatAmount(amount: BigDecimal): String {
-        val formatter = NumberFormat.getNumberInstance(INDIAN_LOCALE)
+    private fun formatAmount(amount: BigDecimal, currencyCode: String = "INR"): String {
+        val locale = CURRENCY_LOCALES[currencyCode] ?: INDIAN_LOCALE
+        val formatter = NumberFormat.getNumberInstance(locale)
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 2
         return formatter.format(amount)

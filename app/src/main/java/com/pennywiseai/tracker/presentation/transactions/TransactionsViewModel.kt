@@ -56,7 +56,7 @@ class TransactionsViewModel @Inject constructor(
     private val _sortOption = MutableStateFlow(SortOption.DATE_NEWEST)
     val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
 
-    private val _selectedCurrency = MutableStateFlow("INR") // Default to INR
+    private val _selectedCurrency = MutableStateFlow<String>("INR") // Will be updated to user's base currency
     val selectedCurrency: StateFlow<String> = _selectedCurrency.asStateFlow()
 
     // Store custom date range as epoch days to survive process death
@@ -125,7 +125,12 @@ class TransactionsViewModel @Inject constructor(
         _currencyGroupedTotals,
         _selectedCurrency
     ) { groupedTotals, currency ->
-        val currencyTotals = groupedTotals.getTotalsForCurrency(currency)
+        val currencyTotals = if (currency != null) {
+            groupedTotals.getTotalsForCurrency(currency)
+        } else {
+            // If no currency is selected, use totals for all currencies combined
+            groupedTotals.getAllTotalsCombined()
+        }
         FilteredTotals(
             income = currencyTotals.income,
             expenses = currencyTotals.expenses,
@@ -199,6 +204,12 @@ class TransactionsViewModel @Inject constructor(
     }
     
     init {
+        // Initialize with user's preferred base currency
+        viewModelScope.launch {
+            val userBaseCurrency = userPreferencesRepository.baseCurrency.first()
+            _selectedCurrency.value = userBaseCurrency
+        }
+
         // Manually combine all flows using transformLatest
         merge(
             searchQuery.debounce(300).map { "search" },
@@ -223,9 +234,21 @@ class TransactionsViewModel @Inject constructor(
                 // Get filtered transactions
                 getFilteredTransactions(query, period, category, categories, typeFilter)
                     .collect { transactions ->
-                        // Filter by currency
-                        val currencyFilteredTransactions = transactions.filter {
-                            it.currency.equals(currency, ignoreCase = true)
+                        // Filter by currency if selected, otherwise use all transactions
+                        val currencyFilteredTransactions = if (currency != null) {
+                            transactions.filter { it.currency.equals(currency, ignoreCase = true) }
+                        } else {
+                            // If no currency is selected, use all transactions but default to showing the most common currency
+                            // Update the selected currency to the most common one if it's still null
+                            if (_selectedCurrency.value == null && transactions.isNotEmpty()) {
+                                val mostCommonCurrency = transactions
+                                    .groupBy { it.currency }
+                                    .maxByOrNull { it.value.size }?.key ?: "INR"
+                                _selectedCurrency.value = mostCommonCurrency
+                            }
+                            // Return transactions for the newly selected currency
+                            val effectiveCurrency = _selectedCurrency.value ?: "INR"
+                            transactions.filter { it.currency.equals(effectiveCurrency, ignoreCase = true) }
                         }
                         emit(sortTransactions(currencyFilteredTransactions, sort))
                     }
@@ -241,8 +264,29 @@ class TransactionsViewModel @Inject constructor(
 
                 // Auto-select primary currency if not already selected or if current currency no longer exists
                 val currentCurrency = selectedCurrency.value
-                if (!_currencyGroupedTotals.value.availableCurrencies.contains(currentCurrency) && _currencyGroupedTotals.value.hasAnyCurrency()) {
+                if (currentCurrency == null && _currencyGroupedTotals.value.hasAnyCurrency()) {
+                    // If no currency is selected, default to primary currency
                     _selectedCurrency.value = _currencyGroupedTotals.value.getPrimaryCurrency()
+                } else if (currentCurrency != null && !_currencyGroupedTotals.value.availableCurrencies.contains(currentCurrency) && _currencyGroupedTotals.value.hasAnyCurrency()) {
+                    // If selected currency is no longer available, switch to primary currency
+                    _selectedCurrency.value = _currencyGroupedTotals.value.getPrimaryCurrency()
+                } else if (currentCurrency != null &&
+                           _currencyGroupedTotals.value.availableCurrencies.contains(currentCurrency) &&
+                           transactions.isEmpty() &&
+                           _currencyGroupedTotals.value.hasAnyCurrency() &&
+                           _currencyGroupedTotals.value.totalsByCurrency.size > 1) {
+                    // If current currency has no transactions but other currencies do, suggest switching
+                    // This handles the case where Iranian bank transactions exist but user's base currency is INR
+                    val otherCurrencies = _currencyGroupedTotals.value.totalsByCurrency.keys.filter { it != currentCurrency }
+                    if (otherCurrencies.isNotEmpty()) {
+                        // Switch to the currency with the most transactions
+                        val currencyWithMostTransactions = otherCurrencies.maxByOrNull {
+                            _currencyGroupedTotals.value.totalsByCurrency[it]?.transactionCount ?: 0
+                        }
+                        if (currencyWithMostTransactions != null) {
+                            _selectedCurrency.value = currencyWithMostTransactions
+                        }
+                    }
                 }
             }
             .launchIn(viewModelScope)
@@ -723,11 +767,11 @@ class TransactionsViewModel @Inject constructor(
         val smsBody = transaction.smsBody ?: ""
         // Use the original SMS sender if available
         val sender = transaction.smsSender ?: ""
-        
+
         // URL encode the parameters
         val encodedMessage = java.net.URLEncoder.encode(smsBody, "UTF-8")
         val encodedSender = java.net.URLEncoder.encode(sender, "UTF-8")
-        
+
         // Encrypt device data for verification
         val encryptedDeviceData = com.pennywiseai.tracker.utils.DeviceEncryption.encryptDeviceData(context)
         val encodedDeviceData = if (encryptedDeviceData != null) {
@@ -735,11 +779,22 @@ class TransactionsViewModel @Inject constructor(
         } else {
             ""
         }
-        
+
         // Create the report URL using hash fragment for privacy
         return "${Constants.Links.WEB_PARSER_URL}/#message=$encodedMessage&sender=$encodedSender&device=$encodedDeviceData&autoparse=true"
     }
-    
+
+    /**
+     * Checks if there are transactions available in other currencies when the current currency has no transactions
+     */
+    fun getOtherCurrenciesWithTransactions(): List<String> {
+        val currentCurrency = _selectedCurrency.value
+        val availableCurrencies = _currencyGroupedTotals.value.availableCurrencies
+
+        // Filter out the currently selected currency
+        return availableCurrencies.filter { it != currentCurrency }
+    }
+
 }
 
 data class TransactionsUiState(
