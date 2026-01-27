@@ -39,7 +39,8 @@ class AiContextRepository @Inject constructor(
         val activeSubscriptionsDeferred = async { getActiveSubscriptions(currentDate) }
         val topCategoriesDeferred = async { getTopCategories(currentDate) }
         val quickStatsDeferred = async { getQuickStats(currentDate) }
-        
+        val accountBalancesDeferred = async { getAccountBalances() }
+
         ChatContext(
             currentDate = currentDate,
             monthSummary = monthSummaryDeferred.await(),
@@ -47,7 +48,7 @@ class AiContextRepository @Inject constructor(
             activeSubscriptions = activeSubscriptionsDeferred.await(),
             topCategories = topCategoriesDeferred.await(),
             quickStats = quickStatsDeferred.await(),
-            accountBalances = getAccountBalances()
+            accountBalances = accountBalancesDeferred.await()
         )
     }
     
