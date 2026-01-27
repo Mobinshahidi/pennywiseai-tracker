@@ -41,7 +41,27 @@ class ParsianBankParser : BankParser() {
     override fun getCurrency(): String = "IRR" // Iranian Rial
 
     override fun extractAmount(message: String): BigDecimal? {
-        // Parse amounts using the regex pattern from the original Python script
+        // First, try to extract amounts from specific patterns in your examples
+        // Pattern for "خريداينترنتي:318,340-" or "انتقال:3,409,000-" or "برداشت:850,000-" or "انتقالي:20,000,000+"
+        val specificPattern = Regex("""(خريداينترنتي|انتقال|برداشت|انتقالي|واریز):\s*([+-]?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)""")
+        specificPattern.find(message)?.let { match ->
+            val amountStr = match.groupValues[2] // Get the amount part
+            val cleanAmount = amountStr.replace(",", "")
+
+            return try {
+                val amountValue = cleanAmount.toBigDecimal()
+                // Only accept amounts >= 1000 based on the Python script logic
+                if (amountValue.abs() >= BigDecimal.valueOf(1000)) {
+                    amountValue.abs() // Return absolute value since sign is handled by transaction type
+                } else {
+                    null
+                }
+            } catch (e: NumberFormatException) {
+                null
+            }
+        }
+
+        // Parse amounts using the original regex pattern from the original Python script
         val amountPattern = Regex("""(?:مبلغ\s*)?(\d{1,3}(?:,\d{3})*|\d+)(?:\s*(?:ریال|تومان))?\s*(?:برداشت|واریز|انتقال|خرید|[-+])""")
 
         amountPattern.find(message)?.let { match ->
@@ -122,8 +142,29 @@ class ParsianBankParser : BankParser() {
     }
 
     override fun extractMerchant(message: String, sender: String): String? {
-        // Parsian Bank doesn't typically include merchant names in SMS
-        // But we can extract card numbers or other relevant info
+        // Extract merchant from specific patterns in Iranian bank messages
+        val patterns = listOf(
+            "خريداينترنتي",  // Internet purchase
+            "انتقال",         // Transfer
+            "برداشت",        // Withdrawal
+            "انتقالي",       // Transfer (another form)
+            "واریز"          // Deposit
+        )
+
+        for (pattern in patterns) {
+            if (message.contains(pattern, ignoreCase = true)) {
+                return when (pattern) {
+                    "خريداينترنتي" -> "Internet Purchase"
+                    "انتقال" -> "Transfer"
+                    "برداشت" -> "Withdrawal"
+                    "انتقالي" -> "Transfer"
+                    "واریز" -> "Deposit"
+                    else -> pattern
+                }
+            }
+        }
+
+        // Fallback to card number extraction if no specific pattern found
         val cardPattern = Regex("""(\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4})""")
         cardPattern.find(message)?.let { match ->
             return "Card ${match.groupValues[1]}"
