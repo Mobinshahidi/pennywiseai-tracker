@@ -23,10 +23,19 @@ class ParsianBankParser : BankParser() {
             "PARSIAN",
             "PARSIAN BANK",
             "PERSIANBANK",
-            "PERSIAN"
+            "PERSIAN",
+            "BANK PARSIAN",
+            "PARSIAN IRAN"
         )
 
-        return upperSender in parsianSenders
+        // Check for the specific number patterns
+        if (upperSender in parsianSenders) {
+            return true
+        }
+
+        // Check if sender contains "parsian" or "persian" with "iran" or "bank"
+        return (sender.contains("parsian", ignoreCase = true) || sender.contains("persian", ignoreCase = true)) &&
+               (sender.contains("iran", ignoreCase = true) || sender.contains("bank", ignoreCase = true))
     }
 
     override fun getCurrency(): String = "IRR" // Iranian Rial

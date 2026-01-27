@@ -20,14 +20,27 @@ class MelliBankParser : BankParser() {
         // Common Melli Bank sender IDs
         val melliSenders = setOf(
             "+98700717",
+            "+98700017",
+            "+9870017",
             "MELLI",
             "MELLIBANK",
             "MELLI BANK",
             "BANK MELLI",
-            "BANKMELLI"
+            "BANKMELLI",
+            "IRAN MELLI",
+            "BANK MELLI IRAN"
         )
 
-        return upperSender in melliSenders
+        // Check for the specific number patterns
+        if (upperSender in melliSenders) {
+            return true
+        }
+
+        // Check if sender contains Iranian country code +98 and contains "melli" or "meli"
+        return (sender.startsWith("+98") &&
+                (sender.contains("melli", ignoreCase = true) || sender.contains("meli", ignoreCase = true))) ||
+               (sender.contains("melli", ignoreCase = true) &&
+                (sender.contains("iran", ignoreCase = true) || sender.contains("bank", ignoreCase = true)))
     }
 
     override fun getCurrency(): String = "IRR" // Iranian Rial
