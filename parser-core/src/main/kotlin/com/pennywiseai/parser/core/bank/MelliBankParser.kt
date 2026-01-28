@@ -46,11 +46,30 @@ class MelliBankParser : BankParser() {
     override fun getCurrency(): String = "IRR" // Iranian Rial
 
     override fun extractAmount(message: String): BigDecimal? {
-        // First, try to extract amounts from specific patterns in your examples
+        // First, try to extract amounts from specific transaction patterns in your examples
         // Pattern for "خريداينترنتي:318,340-" or "انتقال:3,409,000-" or "برداشت:850,000-" or "انتقالي:20,000,000+"
-        val specificPattern = Regex("""(خريداينترنتي|انتقال|برداشت|انتقالي|واریز):\s*([+-]?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)""")
-        specificPattern.find(message)?.let { match ->
+        val transactionPattern = Regex("""(خريداينترنتي|انتقال|برداشت|انتقالي|واریز|خرید):\s*([+-]?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)""")
+        transactionPattern.find(message)?.let { match ->
             val amountStr = match.groupValues[2] // Get the amount part
+            val cleanAmount = amountStr.replace(",", "")
+
+            return try {
+                val amountValue = cleanAmount.toBigDecimal()
+                // Only accept amounts >= 1000 based on the Python script logic
+                if (amountValue.abs() >= BigDecimal.valueOf(1000)) {
+                    amountValue.abs() // Return absolute value since sign is handled by transaction type
+                } else {
+                    null
+                }
+            } catch (e: NumberFormatException) {
+                null
+            }
+        }
+
+        // Also handle the "خرید اینترنتی" pattern specifically
+        val persianInternetPurchasePattern = Regex("""خرید\s+اینترنتی:\s*([+-]?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)""")
+        persianInternetPurchasePattern.find(message)?.let { match ->
+            val amountStr = match.groupValues[1] // Get the amount part
             val cleanAmount = amountStr.replace(",", "")
 
             return try {
@@ -127,10 +146,11 @@ class MelliBankParser : BankParser() {
             // Expense keywords in Persian - including the specific patterns from examples
             lowerMessage.contains("برداشت") ||
             lowerMessage.contains("پرداخت") ||
-            lowerMessage.contains("خرید") ||
+            lowerMessage.contains("خرید") ||  // General purchase
             lowerMessage.contains("انتقال") ||
             lowerMessage.contains("مصرف") ||
-            lowerMessage.contains("خريداينترنتي") ||  // Internet purchase
+            lowerMessage.contains("خريداينترنتي") ||  // Internet purchase (Farsi)
+            lowerMessage.contains("خرید اینترنتی") ||  // Internet purchase (Persian)
             lowerMessage.contains("انتقالي:") -> TransactionType.EXPENSE  // Transfer pattern
 
             else -> null
@@ -150,7 +170,9 @@ class MelliBankParser : BankParser() {
     override fun extractMerchant(message: String, sender: String): String? {
         // Extract merchant from specific patterns in Iranian bank messages
         val patterns = listOf(
-            "خريداينترنتي",  // Internet purchase
+            "خرید اینترنتی",  // Internet purchase (Persian)
+            "خريداينترنتي",  // Internet purchase (Farsi)
+            "خرید",          // General purchase
             "انتقال",         // Transfer
             "برداشت",        // Withdrawal
             "انتقالي",       // Transfer (another form)
@@ -160,7 +182,9 @@ class MelliBankParser : BankParser() {
         for (pattern in patterns) {
             if (message.contains(pattern, ignoreCase = true)) {
                 return when (pattern) {
+                    "خرید اینترنتی" -> "Internet Purchase"
                     "خريداينترنتي" -> "Internet Purchase"
+                    "خرید" -> "Purchase"
                     "انتقال" -> "Transfer"
                     "برداشت" -> "Withdrawal"
                     "انتقالي" -> "Transfer"
@@ -245,9 +269,11 @@ class MelliBankParser : BankParser() {
             return false
         }
 
-        // Check for Iranian bank transaction patterns
+        // Check for Iranian bank transaction patterns - including variations
         val iranianPatterns = listOf(
-            "خريداينترنتي",  // Internet purchase
+            "خريداينترنتي",  // Internet purchase (Farsi)
+            "خرید اینترنتی",  // Internet purchase (Persian)
+            "خرید",          // Purchase
             "انتقال",         // Transfer
             "برداشت",        // Withdrawal
             "انتقالي",       // Transfer (another form)
