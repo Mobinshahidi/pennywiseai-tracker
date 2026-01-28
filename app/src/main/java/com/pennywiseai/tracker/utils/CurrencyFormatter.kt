@@ -74,25 +74,38 @@ object CurrencyFormatter {
                 // If currency not supported, use symbol mapping
                 val symbol = CURRENCY_SYMBOLS[currencyCode] ?: currencyCode
                 // Add space between IRR symbol and amount for better readability
+                val sign = if (amount < BigDecimal.ZERO) "-" else if (amount > BigDecimal.ZERO) "+" else ""
+                val absAmount = amount.abs()
                 if (currencyCode == "IRR") {
-                    return "$symbol ${formatAmount(amount, currencyCode)}"
+                    return "$sign$symbol ${formatAmount(absAmount, currencyCode)}"
                 } else {
-                    return "$symbol${formatAmount(amount, currencyCode)}"
+                    return "$sign$symbol${formatAmount(absAmount, currencyCode)}"
                 }
             }
 
             // Show decimals only if they exist
             formatter.minimumFractionDigits = 0
             formatter.maximumFractionDigits = 2
-            formatter.format(amount)
+            val formatted = formatter.format(amount)
+            // Add space between currency symbol and amount for IRR
+            if (currencyCode == "IRR") {
+                // Find the currency symbol in the formatted string and add space after it
+                val symbol = CURRENCY_SYMBOLS[currencyCode] ?: currencyCode
+                // Replace the symbol with symbol + space to ensure spacing
+                formatted.replaceFirst(Regex.escape(symbol), "$symbol ")
+            } else {
+                formatted
+            }
         } catch (e: Exception) {
             // Fallback to symbol + amount
             val symbol = CURRENCY_SYMBOLS[currencyCode] ?: currencyCode
             // Add space between IRR symbol and amount for better readability
+            val sign = if (amount < BigDecimal.ZERO) "-" else if (amount > BigDecimal.ZERO) "+" else ""
+            val absAmount = amount.abs()
             if (currencyCode == "IRR") {
-                "$symbol ${formatAmount(amount, currencyCode)}"
+                "$sign$symbol ${formatAmount(absAmount, currencyCode)}"
             } else {
-                "$symbol${formatAmount(amount, currencyCode)}"
+                "$sign$symbol${formatAmount(absAmount, currencyCode)}"
             }
         }
     }
