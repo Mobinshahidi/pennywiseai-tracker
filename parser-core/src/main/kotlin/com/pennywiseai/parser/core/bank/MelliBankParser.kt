@@ -135,6 +135,18 @@ class MelliBankParser : BankParser() {
             return TransactionType.INVESTMENT
         }
 
+        // Check for specific patterns with signs in the message
+        // Pattern for "انتقال:3,409,000-" (expense) or "انتقالي:20,000,000+" (income) - sign at the end
+        val transactionPattern = Regex("""(انتقال|انتقالي|واریز|خرید):\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)([-+])""")
+        transactionPattern.find(message)?.let { match ->
+            val sign = match.groupValues[3] // Get the sign at the end
+            return if (sign == "+") {
+                TransactionType.INCOME
+            } else {
+                TransactionType.EXPENSE
+            }
+        }
+
         // Check for Persian keywords from the original Python script
         return when {
             // Income keywords in Persian - check for + sign first
