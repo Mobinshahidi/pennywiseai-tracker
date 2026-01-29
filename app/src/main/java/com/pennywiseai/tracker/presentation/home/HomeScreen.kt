@@ -190,6 +190,7 @@ fun HomeScreen(
             item {
                 TransactionSummaryCards(
                     uiState = uiState,
+                    netDisplayType = netDisplayType,
                     onCurrencySelected = { viewModel.selectCurrency(it) },
                     onTypeClick = onTransactionTypeClick
                 )
@@ -888,6 +889,7 @@ private fun UpcomingSubscriptionsCard(
 @Composable
 private fun TransactionSummaryCards(
     uiState: HomeUiState,
+    netDisplayType: String,
     onCurrencySelected: (String) -> Unit = {},
     onTypeClick: (String?) -> Unit = {}
 ) {
