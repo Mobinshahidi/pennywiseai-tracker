@@ -65,7 +65,7 @@ fun MainScreen(
     val whatsNewVersion by mainViewModel.whatsNewVersion.collectAsState()
 
     // Discord icon visibility
-    val showDiscordIcon by mainViewModel.showDiscordIcon.collectAsState()
+    val showDiscordIcon by mainViewModel.showDiscordIcon.collectAsState(initial = true)
 
     Box(modifier = Modifier.fillMaxSize()) {
         // What's New Dialog
