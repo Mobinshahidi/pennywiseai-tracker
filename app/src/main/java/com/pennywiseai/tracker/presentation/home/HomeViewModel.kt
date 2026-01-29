@@ -22,6 +22,7 @@ import com.pennywiseai.tracker.data.repository.MonthlyBudgetRepository
 import com.pennywiseai.tracker.data.repository.MonthlyBudgetSpending
 import com.pennywiseai.tracker.data.repository.SubscriptionRepository
 import com.pennywiseai.tracker.data.repository.TransactionRepository
+import com.pennywiseai.tracker.data.preferences.UserPreferencesRepository
 import com.pennywiseai.tracker.worker.OptimizedSmsReaderWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -42,6 +43,7 @@ class HomeViewModel @Inject constructor(
     private val monthlyBudgetRepository: MonthlyBudgetRepository,
     private val llmRepository: LlmRepository,
     private val currencyConversionService: CurrencyConversionService,
+    private val userPreferencesRepository: UserPreferencesRepository,
     private val inAppUpdateManager: InAppUpdateManager,
     private val inAppReviewManager: InAppReviewManager,
     @ApplicationContext private val context: Context
@@ -61,8 +63,19 @@ class HomeViewModel @Inject constructor(
     // Store currency breakdown maps for quick access when switching currencies
     private var currentMonthBreakdownMap: Map<String, TransactionRepository.MonthlyBreakdown> = emptyMap()
     private var lastMonthBreakdownMap: Map<String, TransactionRepository.MonthlyBreakdown> = emptyMap()
-    
+
+    // Net display type preference
+    private val _netDisplayType = MutableStateFlow("default")
+    val netDisplayType: StateFlow<String> = _netDisplayType.asStateFlow()
+
     init {
+        // Listen to net display type preference
+        viewModelScope.launch {
+            userPreferencesRepository.netDisplayType.collect { displayType ->
+                _netDisplayType.value = displayType
+            }
+        }
+
         loadHomeData()
     }
     
@@ -540,17 +553,48 @@ class HomeViewModel @Inject constructor(
             expenses = BigDecimal.ZERO
         )
 
+        // Determine the current month total based on net display type preference
+        val currentMonthTotal = if (_netDisplayType.value == "maneh") {
+            // Use account balances when net display type is "maneh" (current balance)
+            getNetWorthForCurrency(selectedCurrency)
+        } else {
+            // Use income - expenses when net display type is "default"
+            currentBreakdown.total
+        }
+
+        // Determine the last month total based on net display type preference
+        val lastMonthTotal = if (_netDisplayType.value == "maneh") {
+            // For last month, we can't easily calculate net worth, so we'll use the same approach
+            // Or we could calculate historical account balances if available
+            currentBreakdown.total // Fallback to income - expense for last month
+        } else {
+            lastBreakdown.total
+        }
+
         _uiState.value = _uiState.value.copy(
-            currentMonthTotal = currentBreakdown.total,
+            currentMonthTotal = currentMonthTotal,
             currentMonthIncome = currentBreakdown.income,
             currentMonthExpenses = currentBreakdown.expenses,
-            lastMonthTotal = lastBreakdown.total,
+            lastMonthTotal = lastMonthTotal,
             lastMonthIncome = lastBreakdown.income,
             lastMonthExpenses = lastBreakdown.expenses,
             selectedCurrency = selectedCurrency,
             availableCurrencies = availableCurrencies
         )
         calculateMonthlyChange()
+    }
+
+    private fun getNetWorthForCurrency(currency: String): BigDecimal {
+        // Calculate net worth as sum of all account balances in the specified currency
+        val regularAccounts = _uiState.value.accountBalances.filter { it.currency == currency }
+        val creditCards = _uiState.value.creditCards.filter { it.currency == currency }
+
+        // Net worth = sum of all bank account balances - sum of all credit card balances
+        val totalBankBalance = regularAccounts.sumOf { it.balance }
+        val totalCreditCardBalance = creditCards.sumOf { it.balance } // Credit card balance is typically negative
+
+        // For credit cards, we subtract the outstanding balance (which reduces net worth)
+        return totalBankBalance - totalCreditCardBalance
     }
 
     override fun onCleared() {

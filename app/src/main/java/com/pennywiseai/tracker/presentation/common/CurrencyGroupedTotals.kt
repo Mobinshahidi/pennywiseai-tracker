@@ -72,4 +72,15 @@ data class CurrencyTotals(
 ) {
     val netBalance: BigDecimal
         get() = income - expenses - credit - transfer - investment
+
+    /**
+     * Calculates the net value based on user preference
+     * @param netDisplayType The user's preference: "default" for income - expense, "maneh" for current balance
+     */
+    fun calculateNetValue(netDisplayType: String = "default"): BigDecimal {
+        return when (netDisplayType) {
+            "maneh" -> netWorth  // Current balance (Maneh)
+            else -> netBalance    // Income - Expense (Default)
+        }
+    }
 }

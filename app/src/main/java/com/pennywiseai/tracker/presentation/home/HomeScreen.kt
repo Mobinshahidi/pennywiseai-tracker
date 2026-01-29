@@ -102,6 +102,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val deletedTransaction by viewModel.deletedTransaction.collectAsState()
     val smsScanWorkInfo by viewModel.smsScanWorkInfo.collectAsState()
+    val netDisplayType by viewModel.netDisplayType.collectAsState()
     val activity = LocalActivity.current
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -514,6 +515,7 @@ private fun MonthSummaryCard(
     currency: String,
     currentExpenses: BigDecimal = BigDecimal.ZERO,
     lastExpenses: BigDecimal = BigDecimal.ZERO,
+    isNetDisplayTypeManeh: Boolean = false,
     onShowBreakdown: () -> Unit = {}
 ) {
     val isPositive = monthTotal >= BigDecimal.ZERO
@@ -568,8 +570,13 @@ private fun MonthSummaryCard(
     )
     val currencySymbol = currencySymbols[currency] ?: currency
 
-    val titleText = "Cash Flow ($currencySymbol) • $currentMonth 1-${now.dayOfMonth}"
-    
+    // Determine the title based on net display type
+    val titleText = if (isNetDisplayTypeManeh) {
+        "Net Worth ($currencySymbol) • $currentMonth 1-${now.dayOfMonth}"
+    } else {
+        "Cash Flow ($currencySymbol) • $currentMonth 1-${now.dayOfMonth}"
+    }
+
     SummaryCard(
         title = titleText,
         amount = displayAmount,
@@ -914,6 +921,7 @@ private fun TransactionSummaryCards(
                         currency = uiState.selectedCurrency,
                         currentExpenses = uiState.currentMonthExpenses,
                         lastExpenses = uiState.lastMonthExpenses,
+                        isNetDisplayTypeManeh = netDisplayType == "maneh",
                         onShowBreakdown = { onTypeClick(null) }
                     )
                 }

@@ -120,11 +120,20 @@ class TransactionsViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    // Net display type preference
+    val netDisplayType: StateFlow<String> = userPreferencesRepository.netDisplayType
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "default"
+        )
+
     // Computed property for current selected currency totals
     val filteredTotals: StateFlow<FilteredTotals> = combine(
         _currencyGroupedTotals,
-        _selectedCurrency
-    ) { groupedTotals, currency ->
+        _selectedCurrency,
+        netDisplayType
+    ) { groupedTotals, currency, displayType ->
         val currencyTotals = if (currency != null) {
             groupedTotals.getTotalsForCurrency(currency)
         } else {
@@ -137,7 +146,7 @@ class TransactionsViewModel @Inject constructor(
             credit = currencyTotals.credit,
             transfer = currencyTotals.transfer,
             investment = currencyTotals.investment,
-            netBalance = currencyTotals.netBalance,
+            netBalance = currencyTotals.calculateNetValue(displayType), // Use the calculated net value based on preference
             transactionCount = currencyTotals.transactionCount
         )
     }.stateIn(

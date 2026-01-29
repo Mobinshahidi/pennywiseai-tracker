@@ -612,7 +612,7 @@ fun SettingsScreen(
                 ) {
                     val netDisplayTypes = listOf(
                         "default" to "Income - Expense",
-                        "maneh" to "Current Balance (Maneh)"
+                        "maneh" to "Current Balance"
                     )
 
                     items(netDisplayTypes) { (type, label) ->
