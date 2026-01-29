@@ -24,6 +24,8 @@ class MainViewModel @Inject constructor(
     private val _whatsNewVersion = MutableStateFlow<WhatsNewVersion?>(null)
     val whatsNewVersion: StateFlow<WhatsNewVersion?> = _whatsNewVersion.asStateFlow()
 
+    val showDiscordIcon = userPreferencesRepository.showDiscordIcon
+
     init {
         checkWhatsNew()
     }

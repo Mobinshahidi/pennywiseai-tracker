@@ -129,7 +129,7 @@ class AnalyticsViewModel @Inject constructor(
 
                 val filteredTransactions = filteredTransactionsWithSplits.map { it.transaction }
 
-                // Calculate total
+                // Calculate total based on the filter type
                 val totalSpending = filteredTransactions.sumOf { it.amount.toDouble() }.toBigDecimal()
 
                 // Build category breakdown considering splits

@@ -538,6 +538,26 @@ class SettingsViewModel @Inject constructor(
     fun getBaseCurrency(): kotlinx.coroutines.flow.Flow<String> {
         return userPreferencesRepository.baseCurrency
     }
+
+    fun setNetDisplayType(displayType: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.setNetDisplayType(displayType)
+        }
+    }
+
+    fun getNetDisplayType(): kotlinx.coroutines.flow.Flow<String> {
+        return userPreferencesRepository.netDisplayType
+    }
+
+    fun setShowDiscordIcon(show: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setShowDiscordIcon(show)
+        }
+    }
+
+    fun getShowDiscordIcon(): kotlinx.coroutines.flow.Flow<Boolean> {
+        return userPreferencesRepository.showDiscordIcon
+    }
 }
 
 enum class DownloadState {

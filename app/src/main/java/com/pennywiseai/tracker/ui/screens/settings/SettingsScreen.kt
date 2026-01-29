@@ -64,6 +64,8 @@ fun SettingsScreen(
     val importExportMessage by settingsViewModel.importExportMessage.collectAsStateWithLifecycle()
     val exportedBackupFile by settingsViewModel.exportedBackupFile.collectAsStateWithLifecycle()
     val selectedCurrency by settingsViewModel.getBaseCurrency().collectAsStateWithLifecycle(initialValue = "INR")
+    val showDiscordIcon by settingsViewModel.getShowDiscordIcon().collectAsStateWithLifecycle(initialValue = true)
+    val selectedNetDisplayType by settingsViewModel.getNetDisplayType().collectAsStateWithLifecycle(initialValue = "default")
     var showSmsScanDialog by remember { mutableStateOf(false) }
     var showExportOptionsDialog by remember { mutableStateOf(false) }
     var showTimeoutDialog by remember { mutableStateOf(false) }
@@ -537,6 +539,87 @@ fun SettingsScreen(
                             selected = selectedCurrency == currency,
                             onClick = { settingsViewModel.updateBaseCurrency(currency) },
                             label = { Text(currency) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        // Discord Icon Visibility
+        PennyWiseCard(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Dimensions.Padding.content),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Show Discord Icon",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Display Discord icon in the top bar",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = showDiscordIcon,
+                    onCheckedChange = { settingsViewModel.setShowDiscordIcon(it) }
+                )
+            }
+        }
+
+        // Net Display Type
+        PennyWiseCard(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(Dimensions.Padding.content),
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Net Value Display",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Choose how to display net value",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Net display type selection chips
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                ) {
+                    val netDisplayTypes = listOf(
+                        "default" to "Income - Expense",
+                        "maneh" to "Current Balance (Maneh)"
+                    )
+
+                    items(netDisplayTypes) { (type, label) ->
+                        FilterChip(
+                            selected = selectedNetDisplayType == type,
+                            onClick = { settingsViewModel.setNetDisplayType(type) },
+                            label = { Text(label) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer

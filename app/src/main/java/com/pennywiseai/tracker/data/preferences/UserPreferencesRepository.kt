@@ -52,6 +52,12 @@ class UserPreferencesRepository @Inject constructor(
         // What's New feature
         val LAST_SEEN_APP_VERSION = stringPreferencesKey("last_seen_app_version")
 
+        // Net display preference (default vs maneh)
+        val NET_DISPLAY_TYPE = stringPreferencesKey("net_display_type")
+
+        // Discord icon visibility preference
+        val SHOW_DISCORD_ICON = booleanPreferencesKey("show_discord_icon")
+
         // Monthly Budget
         val MONTHLY_BUDGET_LIMIT = stringPreferencesKey("monthly_budget_limit")
     }
@@ -385,6 +391,30 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateBaseCurrency(currency: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.BASE_CURRENCY] = currency
+        }
+    }
+
+    // Net display type
+    val netDisplayType: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[PreferencesKeys.NET_DISPLAY_TYPE] ?: "default"  // Default to "default" (income - expense)
+        }
+
+    suspend fun setNetDisplayType(displayType: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.NET_DISPLAY_TYPE] = displayType
+        }
+    }
+
+    // Discord icon visibility
+    val showDiscordIcon: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[PreferencesKeys.SHOW_DISCORD_ICON] ?: true  // Default to true (show icon)
+        }
+
+    suspend fun setShowDiscordIcon(show: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SHOW_DISCORD_ICON] = show
         }
     }
 }

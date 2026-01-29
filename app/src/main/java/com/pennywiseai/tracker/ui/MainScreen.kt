@@ -64,6 +64,9 @@ fun MainScreen(
     // What's New dialog state
     val whatsNewVersion by mainViewModel.whatsNewVersion.collectAsState()
 
+    // Discord icon visibility
+    val showDiscordIcon by mainViewModel.showDiscordIcon.collectAsState()
+
     Box(modifier = Modifier.fillMaxSize()) {
         // What's New Dialog
         whatsNewVersion?.let { version ->
@@ -92,7 +95,7 @@ fun MainScreen(
                 },
                 showBackButton = baseRoute in listOf("chat", "settings", "subscriptions", "transactions", "categories", "unrecognized_sms", "manage_accounts", "add_account", "faq"),
                 showSettingsButton = baseRoute !in listOf("settings", "categories", "unrecognized_sms", "manage_accounts", "add_account", "faq"),
-                showDiscordButton = baseRoute !in listOf("settings", "categories", "unrecognized_sms", "manage_accounts", "add_account", "faq"), // Hide on these screens
+                showDiscordButton = baseRoute !in listOf("settings", "categories", "unrecognized_sms", "manage_accounts", "add_account", "faq") && showDiscordIcon, // Hide on these screens and respect user preference
                 onBackClick = { navController.popBackStack() },
                 onSettingsClick = { navController.navigate("settings") },
                 onDiscordClick = {
