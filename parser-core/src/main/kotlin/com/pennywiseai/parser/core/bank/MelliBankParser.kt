@@ -222,6 +222,13 @@ class MelliBankParser : BankParser() {
 
     override fun extractAccountLast4(message: String): String? {
         // Extract last 4 digits of card/account number if present
+        // Handle Persian format: حساب:32000 (Account:32000)
+        val persianAccountPattern = Regex("""حساب\s*:?\s*(\d{1,5})""") // Allow 1-5 digits for Iranian accounts
+        persianAccountPattern.find(message)?.let { match ->
+            return match.groupValues[1]
+        }
+
+        // Handle standard card pattern: 4 digits followed by separator and 4 more digits
         val cardPattern = Regex("""\d{4}[-\s]?(\d{4})""")
         cardPattern.find(message)?.let { match ->
             return match.groupValues[1]
@@ -242,17 +249,38 @@ class MelliBankParser : BankParser() {
             }
         }
 
+        // Also handle format without comma separators
+        val balancePatternNoComma = Regex("""مانده\s*:?\s*(\d+)""")
+        balancePatternNoComma.find(message)?.let { match ->
+            val balanceStr = match.groupValues[1]
+            return try {
+                BigDecimal(balanceStr)
+            } catch (e: NumberFormatException) {
+                BigDecimal.ZERO
+            }
+        }
+
         return BigDecimal.ZERO
     }
 
     override fun detectIsCard(message: String): Boolean {
         val lowerMessage = message.lowercase()
-        
+
         // Check for card-related keywords
         val cardKeywords = listOf(
             "کارت", "card", "debit card", "credit card", "کارت بدهی", "کارت اعتباری"
         )
-        
+
+        // Check for account-related keywords to exclude them
+        val accountKeywords = listOf(
+            "حساب", "a/c", "account"
+        )
+
+        // If it contains account keywords, it's likely not a card transaction
+        if (accountKeywords.any { lowerMessage.contains(it) }) {
+            return false
+        }
+
         return cardKeywords.any { lowerMessage.contains(it) }
     }
 
