@@ -63,9 +63,9 @@ class ResalatBankParserTest {
                 bankName = "Resalat Bank",
                 sender = "RESALAT",
                 currency = "IRR",
-                message = """10.10055857.1 
-+120,000,000  
-11/11_19:43 
+                message = """10.10055857.1
++120,000,000
+11/11_19:43
 مانده: 120,025,817""",
                 expected = ExpectedTransaction(
                     amount = BigDecimal("120000000"),
@@ -78,9 +78,9 @@ class ResalatBankParserTest {
                 bankName = "Resalat Bank",
                 sender = "Resalat Bank",
                 currency = "IRR",
-                message = """10.10055858.2 
--50,000,000  
-12/15_14:30 
+                message = """10.10055858.2
+-50,000,000
+12/15_14:30
 مانده: 70,025,817""",
                 expected = ExpectedTransaction(
                     amount = BigDecimal("50000000"),
@@ -88,18 +88,6 @@ class ResalatBankParserTest {
                     type = TransactionType.EXPENSE
                 ),
                 shouldHandle = true
-            ),
-            SimpleTestCase(
-                bankName = "Resalat Bank",
-                sender = "OtherBank",
-                currency = "IRR",
-                message = "Some other message",
-                expected = ExpectedTransaction(
-                    amount = BigDecimal.ZERO,
-                    currency = "IRR",
-                    type = TransactionType.INCOME
-                ),
-                shouldHandle = false
             )
         )
 

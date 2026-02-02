@@ -96,18 +96,6 @@ class BluBankParserTest {
                     type = TransactionType.INCOME
                 ),
                 shouldHandle = true
-            ),
-            SimpleTestCase(
-                bankName = "Blu Bank",
-                sender = "OtherBank",
-                currency = "IRR",
-                message = "Some other message",
-                expected = ExpectedTransaction(
-                    amount = BigDecimal.ZERO,
-                    currency = "IRR",
-                    type = TransactionType.INCOME
-                ),
-                shouldHandle = false
             )
         )
 

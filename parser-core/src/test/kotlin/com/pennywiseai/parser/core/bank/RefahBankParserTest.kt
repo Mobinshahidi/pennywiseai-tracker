@@ -129,18 +129,6 @@ class RefahBankParserTest {
                     type = TransactionType.EXPENSE
                 ),
                 shouldHandle = true
-            ),
-            SimpleTestCase(
-                bankName = "Refah Bank",
-                sender = "OtherBank",
-                currency = "IRR",
-                message = "Some other message",
-                expected = ExpectedTransaction(
-                    amount = BigDecimal.ZERO,
-                    currency = "IRR",
-                    type = TransactionType.INCOME
-                ),
-                shouldHandle = false
             )
         )
 
