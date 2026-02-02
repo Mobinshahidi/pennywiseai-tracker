@@ -75,7 +75,11 @@ object BankParserFactory {
         StandardCharteredBankParser(),  // Standard Chartered Bank (India)
         EquitasBankParser(),  // Equitas Small Finance Bank (India)
         MelliBankParser(),   // Melli Bank (Iran)
-        ParsianBankParser()  // Parsian Bank (Iran)
+        ParsianBankParser(),  // Parsian Bank (Iran)
+        ResalatBankParser(),  // Resalat Bank (Iran)
+        RefahBankParser(),    // Refah Bank (Iran)
+        KeshavarziBankParser(), // Keshavarzi Bank (Iran)
+        BluBankParser()       // Blu Bank (Iran)
         // Add more bank parsers here as we implement them
     )
 
